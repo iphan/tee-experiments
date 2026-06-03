@@ -14,6 +14,7 @@ include = ["examples*", "utils*", "mmlu*"]
 
 [tool.setuptools.package-data]
 "*" = ["eval.yaml"]
+"mmlu.data_gen.data" = ["*.csv", "*.txt", "*.json"]
 
 [tool.ruff]
 extend-exclude = [
@@ -153,11 +154,13 @@ dependencies = [
 # should export your @task functions.
 # Note: examples are NOT registered -- only your evaluations under src/.
 [project.entry-points.inspect_ai]
+mmlu = "mmlu"
 
 [dependency-groups]
 dev = [
     "inspect-scout>=0.3.0",  # llm_scanner API used by agent_artefacts/trajectory_analysis/inspect_scout/
     "mypy",
+    "openai>=1.99.7",
     "pandas-stubs",
     "pre-commit",
     "pytest",

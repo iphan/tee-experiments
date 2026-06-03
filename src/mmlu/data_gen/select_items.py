@@ -104,13 +104,23 @@ def load_mmlu_en(revision: str | None = None) -> pd.DataFrame:
     """
     from datasets import load_dataset
 
-    raw = load_dataset(EN_DATASET, EN_CONFIG, split=SPLIT, revision=revision).to_pandas()
+    raw = load_dataset(
+        EN_DATASET, EN_CONFIG, split=SPLIT, revision=revision
+    ).to_pandas()
     df = raw.reset_index(drop=False).rename(
         columns={"index": "orig_idx", "question": "question_en", "answer": "answer_en"}
     )
     df = _add_alignment_keys(df)
     return df[
-        ["subject", "orig_idx", "idx_in_subject", "item_id", "question_en", "choices", "answer_en"]
+        [
+            "subject",
+            "orig_idx",
+            "idx_in_subject",
+            "item_id",
+            "question_en",
+            "choices",
+            "answer_en",
+        ]
     ]
 
 
@@ -122,7 +132,9 @@ def load_mmmlu_fr(revision: str | None = None) -> pd.DataFrame:
     """
     from datasets import load_dataset
 
-    raw = load_dataset(FR_DATASET, FR_CONFIG, split=SPLIT, revision=revision).to_pandas()
+    raw = load_dataset(
+        FR_DATASET, FR_CONFIG, split=SPLIT, revision=revision
+    ).to_pandas()
     df = raw.rename(
         columns={
             "Unnamed: 0": "orig_idx",
@@ -133,7 +145,18 @@ def load_mmmlu_fr(revision: str | None = None) -> pd.DataFrame:
     )
     df = _add_alignment_keys(df)
     return df[
-        ["subject", "orig_idx", "idx_in_subject", "item_id", "question_fr", "A", "B", "C", "D", "answer_fr"]
+        [
+            "subject",
+            "orig_idx",
+            "idx_in_subject",
+            "item_id",
+            "question_fr",
+            "A",
+            "B",
+            "C",
+            "D",
+            "answer_fr",
+        ]
     ]
 
 
@@ -332,7 +355,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--en-revision", default=None, help="Pin cais/mmlu revision.")
-    parser.add_argument("--fr-revision", default=None, help="Pin openai/MMMLU revision.")
+    parser.add_argument(
+        "--fr-revision", default=None, help="Pin openai/MMMLU revision."
+    )
     return parser.parse_args()
 
 

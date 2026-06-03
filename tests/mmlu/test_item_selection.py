@@ -65,7 +65,10 @@ class TestPureLogic:
         # when
         grouped = group_subjects_by_category(subjects)
         # then
-        assert grouped == {"Other": ["marketing", "nutrition"], "Humanities": ["philosophy"]}
+        assert grouped == {
+            "Other": ["marketing", "nutrition"],
+            "Humanities": ["philosophy"],
+        }
 
     def test_group_subjects_rejects_unknown(self) -> None:
         # given an unknown subject / when / then

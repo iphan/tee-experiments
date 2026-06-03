@@ -85,7 +85,9 @@ def subject_label(subject: str, language: str) -> str:
 
 def render_choices(row: Mapping[str, object]) -> str:
     """Render the four answer choices as ``A. ...`` lines (constant across variants)."""
-    return "\n".join(f"{letter}. {row[f'choice_{letter}']}" for letter in ANSWER_LETTERS)
+    return "\n".join(
+        f"{letter}. {row[f'choice_{letter}']}" for letter in ANSWER_LETTERS
+    )
 
 
 def render_prompt(row: Mapping[str, object], variant_id: str, language: str) -> str:
@@ -106,7 +108,9 @@ def render_prompt(row: Mapping[str, object], variant_id: str, language: str) -> 
     if language not in TEMPLATES:
         raise ValueError(f"Unknown language {language!r}; expected one of {LANGUAGES}.")
     if variant_id not in VARIANT_IDS:
-        raise ValueError(f"Unknown variant_id {variant_id!r}; expected one of {VARIANT_IDS}.")
+        raise ValueError(
+            f"Unknown variant_id {variant_id!r}; expected one of {VARIANT_IDS}."
+        )
     template = TEMPLATES[language][VARIANT_IDS.index(variant_id)]
     return template.format(
         subject=subject_label(str(row["subject"]), language),

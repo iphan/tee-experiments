@@ -1,0 +1,56 @@
+{
+  "seed": 42,
+  "n_total": 100,
+  "subjects_by_category": {
+    "STEM": [
+      "high_school_mathematics",
+      "college_computer_science"
+    ],
+    "Humanities": [
+      "world_religions",
+      "philosophy"
+    ],
+    "Social Sciences": [
+      "sociology",
+      "high_school_macroeconomics"
+    ],
+    "Other": [
+      "marketing",
+      "nutrition"
+    ]
+  },
+  "per_subject_counts": {
+    "college_computer_science": 12,
+    "high_school_macroeconomics": 12,
+    "high_school_mathematics": 13,
+    "marketing": 13,
+    "nutrition": 12,
+    "philosophy": 12,
+    "sociology": 13,
+    "world_religions": 13
+  },
+  "per_category_counts": {
+    "Humanities": 25,
+    "Other": 25,
+    "STEM": 25,
+    "Social Sciences": 25
+  },
+  "alignment_check": {
+    "rows_checked": 10,
+    "passed": true
+  },
+  "datasets": {
+    "en": {
+      "path": "cais/mmlu",
+      "config": "all",
+      "split": "test",
+      "revision": "c30699e8356da336a370243923dbaf21066bb9fe"
+    },
+    "fr": {
+      "path": "openai/MMMLU",
+      "config": "FR_FR",
+      "split": "test",
+      "revision": "325a01dc3e173cac1578df94120499aaca2e2504"
+    }
+  }
+}

@@ -21,6 +21,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -280,7 +281,7 @@ def write_outputs(
     out_dir: Path,
     en: pd.DataFrame,
     fr: pd.DataFrame,
-    meta: dict[str, object],
+    meta: dict[str, Any],
 ) -> None:
     """Write the item-id list, both CSVs, and the selection metadata."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -297,7 +298,7 @@ def select_items(
     seed: int,
     en_revision: str | None,
     fr_revision: str | None,
-) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, object]]:
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
     """Run the full selection pipeline, returning EN/FR frames and metadata."""
     subjects = [s for subjects in subjects_by_category.values() for s in subjects]
 
@@ -317,7 +318,7 @@ def select_items(
 
     per_subject = sample.groupby("subject").size().to_dict()
     per_category = sample.groupby("category").size().to_dict()
-    meta: dict[str, object] = {
+    meta: dict[str, Any] = {
         "seed": seed,
         "n_total": n_total,
         "subjects_by_category": subjects_by_category,

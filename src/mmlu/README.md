@@ -72,7 +72,7 @@ See `uv run inspect eval --help` for all available options.
 
 Example usage
 
-```
+```bash
 # all 100 items x 5 variants x 3 epochs, English
 uv run inspect eval mmlu_tee --model openai/gpt-5-nano
 

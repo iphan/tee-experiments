@@ -47,7 +47,7 @@ per-cell variance tables + cross-cell comparisons + figures
 Every TEE eval is generated across the same design dimensions:
 
 | Dimension | Meaning | Mechanism |
-|---|---|---|
+| --------- | ------- | --------- |
 | **N** items | a fixed, frozen item set, reused across cells | dataset rows |
 | **V** prompt variants | instruction/framing wrappers; `V_1` is the canonical prompt | one sample per variant |
 | **R** replications | repeated calls at temperature > 0 | Inspect **epochs** |

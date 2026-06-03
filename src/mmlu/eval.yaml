@@ -1,0 +1,18 @@
+title: "MMLU TEE: Multiple-Choice Correctness Under Prompt Variants"
+description: |
+  MMLU (English) and MMMLU (French) multiple-choice correctness, with each item
+  rendered under several hand-authored prompt variants and repeated over epochs.
+  Built for a Total Eval Error (Messing 2026) replication and extension: the
+  (item x variant x replication) observations are decomposed into pipeline
+  variance components by the totalevalerror R package. No LLM judge layer.
+arxiv: https://arxiv.org/abs/2009.03300
+group: Knowledge
+contributors:
+  - iphan
+version: "1-A"
+tasks:
+  - name: mmlu_tee
+    dataset_samples: 500
+
+metadata:
+  requires_internet: false

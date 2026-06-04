@@ -25,6 +25,9 @@ venv/
 # Inspect logs
 logs/
 
+# TEE long-format / .rda exports
+exports/
+
 # OS
 .DS_Store
 Thumbs.db

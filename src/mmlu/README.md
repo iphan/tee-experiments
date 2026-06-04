@@ -1,6 +1,6 @@
 # MMLU TEE: Multiple-Choice Correctness Under Prompt Variants
 
-Each selected MMLU item is rendered under several hand-authored prompt variants and run for several replications (Inspect
+Each selected MMLU item is rendered under the author's original prompt variants and run for several replications (Inspect
 epochs), producing the (item x variant x replication) observations the ``totalevalerror`` R pipeline decomposes into variance components.
 
 <!-- Contributors: Automatically Generated -->
@@ -66,7 +66,7 @@ See `uv run inspect eval --help` for all available options.
 - `language` (Literal['en', 'fr']): ``"en"`` (MMLU) or ``"fr"`` (MMMLU); selects the prompt-variant template set and the default items CSV. (default: `'en'`)
 - `csv_path` (str | None): Path to a ``selected_items_*`` CSV. Defaults to the packaged ``selected_items_{language}.csv``. (default: `None`)
 - `n_items` (int | None): Use only a stratified subset of this many items (balanced across categories/subjects, deterministic given ``seed``). ``None`` uses all items in the CSV. This is item-level subsetting, distinct from ``--limit`` which truncates the total (item x variant) sample count. (default: `None`)
-- `n_variants` (int): Number of prompt variants to use, 1 to 5 (``V_1``..``V_n``). (default: `5`)
+- `n_variants` (int): Number of prompt variants to use, 1 to 5 (``v_0``..``v_{n-1}``). (default: `5`)
 - `seed` (int): Seed for the stratified item subset (not the generation seed). (default: `42`)
 <!-- /Parameters: Automatically Generated -->
 
@@ -92,7 +92,26 @@ uv run inspect eval mmlu_tee --model openai/gpt-5-nano --temperature 1.0 --max-t
 - Social Sciences: sociology, high_school_macroeconomics
 - Other: marketing, nutrition
 
-Each selected MMLU item is rendered under several hand-authored prompt variants to measure whether the prompt affects the model's accuracy.
+## Prompt variants
+
+Each item is rendered under five prompt variants — Messing (2026)'s originals,
+vendored verbatim in [`data_gen/prompts/mmlu_variants.md`](data_gen/prompts/mmlu_variants.md)
+(French translation in [`mmlu_variants_fr.md`](data_gen/prompts/mmlu_variants_fr.md)).
+Every variant wraps the same question and choices; only the instruction framing
+and the answer-option delimiter vary. The task, output format (a single A-D
+letter), and reasoning mode (direct answer) are held constant (Assumption 1).
+`v_0` is the canonical reference variant.
+
+| ID    | Framing                          | Option delimiter |
+| ----- | -------------------------------- | ---------------- |
+| `v_0` | Standard                         | `A.`             |
+| `v_1` | Exam                             | `(A)`            |
+| `v_2` | Expert                           | `A)`             |
+| `v_3` | Minimal (trailing `Answer:` cue) | `A.`             |
+| `v_4` | Analytical                       | lowercase `a)`   |
+
+`n_variants` selects the first `n` in order, so a reduced run always includes
+the canonical `v_0` first.
 
 ## Scoring
 

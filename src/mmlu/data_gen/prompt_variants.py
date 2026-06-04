@@ -1,103 +1,77 @@
-"""Hand-authored MMLU/MMMLU prompt variants and the helper that wraps items.
+"""The author's original MMLU/MMMLU prompt variants and the item-wrapping helper.
 
 In Total Eval Error (Messing 2026) the MMLU "prompt variant" is the instruction
-wrapper around a question, not a rewording of the question itself. Following the
-paper (SI Appendix O, Assumption 1), the variants are a small hand-written set of
-templates that differ only in instruction phrasing and framing while holding
-constant the task, the answer format (a single letter A-D), the reasoning mode
-(direct answer), and the verbatim question and choices. ``V_1`` is the canonical
-MMLU benchmark prompt, included as one of the variants.
+wrapper around a question, not a rewording of the question itself. These are the
+**author's original five variants** (published after correspondence), vendored
+verbatim under ``prompts/mmlu_variants.md``; ``prompts/mmlu_variants_fr.md`` holds
+our French translation. Each variant differs only in instruction phrasing,
+framing, and the answer-option delimiter (``A.``, ``(A)``, ``A)``, lowercase
+``a)``) while holding constant the task and the verbatim question and choices.
+``v_0`` ("Standard") is the canonical reference variant.
+
+The choices are embedded inline in every template, so unlike the canonical MMLU
+prompt the variants carry no subject and no single fixed answer cue (only the
+"Minimal" variant ``v_3`` ends with an ``Answer:`` line).
 """
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Mapping
-
-from mmlu.data_gen.categories import FR_SUBJECT_NAMES
-
-logger = logging.getLogger(__name__)
 
 ANSWER_LETTERS = "ABCD"
 NUM_VARIANTS = 5
-VARIANT_IDS = [f"V_{i}" for i in range(1, NUM_VARIANTS + 1)]
-ORIGINAL_VARIANT_ID = "V_1"
+VARIANT_IDS = [f"v_{i}" for i in range(NUM_VARIANTS)]
+ORIGINAL_VARIANT_ID = "v_0"
 LANGUAGES = ("en", "fr")
 
-# Each template fills {subject}, {question}, and {choices}. The choices block and
-# the trailing answer cue are held constant across variants (output format); only
-# the instruction phrasing and framing change. V_1 is the canonical MMLU prompt.
+# Each template fills {question} and {A}..{D} (the choice texts). The instruction
+# phrasing, framing, and option delimiter vary per variant; v_0 is canonical.
+# Mirrors prompts/mmlu_variants.md verbatim.
 EN_TEMPLATES = [
-    "The following are multiple choice questions (with answers) about {subject}.\n"
-    "\n{question}\n{choices}\nAnswer:",
-    "Answer the following multiple-choice question about {subject}. Reply with "
-    "only the letter (A, B, C, or D) of the correct option.\n"
-    "\n{question}\n{choices}\nAnswer:",
-    "Here is a question on {subject}. Choose the single best answer and respond "
-    "with just its letter.\n"
-    "\n{question}\n{choices}\nAnswer:",
-    "You are taking an exam on {subject}. Read the question and the four options "
-    "below, then give only the letter (A-D) of the correct answer.\n"
-    "\n{question}\n{choices}\nAnswer:",
-    "Consider the {subject} question below. Which of the four options is correct? "
-    "Output only the corresponding letter.\n"
-    "\n{question}\n{choices}\nAnswer:",
+    "Answer the following multiple-choice question. Reply with only the letter "
+    "(A, B, C, or D).\n"
+    "\nQuestion: {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}",
+    "You are taking a test. Select the correct answer for the question below. "
+    "Respond with just the letter.\n"
+    "\nQ: {question}\n(A) {A}\n(B) {B}\n(C) {C}\n(D) {D}",
+    "As a knowledgeable expert, identify the correct answer to this question. "
+    "Output only the letter of the correct choice.\n"
+    "\n{question}\nOptions:\nA) {A}\nB) {B}\nC) {C}\nD) {D}",
+    "{question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\n\nAnswer:",
+    "Read the following question carefully and select the best answer from the "
+    "options provided. State only the letter.\n"
+    "\nQuestion: {question}\nChoices:\na) {A}\nb) {B}\nc) {C}\nd) {D}",
 ]
 
+# French translation (prompts/mmlu_variants_fr.md): instruction prose and labels
+# are translated; the option delimiters and template structure match EN.
 FR_TEMPLATES = [
-    "Les questions suivantes sont des questions à choix multiples (avec "
-    "réponses) sur {subject}.\n"
-    "\n{question}\n{choices}\nRéponse :",
-    "Répondez à la question à choix multiples suivante sur "
-    "{subject}. Indiquez uniquement la lettre (A, B, C ou D) de la bonne "
-    "réponse.\n"
-    "\n{question}\n{choices}\nRéponse :",
-    "Voici une question sur {subject}. Choisissez la meilleure réponse et "
-    "répondez en donnant seulement sa lettre.\n"
-    "\n{question}\n{choices}\nRéponse :",
-    "Vous passez un examen sur {subject}. Lisez la question et les quatre options "
-    "ci-dessous, puis donnez uniquement la lettre (A à D) de la bonne "
-    "réponse.\n"
-    "\n{question}\n{choices}\nRéponse :",
-    "Considérez la question suivante sur {subject}. Laquelle des quatre "
-    "options est correcte ? N'indiquez que la lettre correspondante.\n"
-    "\n{question}\n{choices}\nRéponse :",
+    "Répondez à la question à choix multiples suivante. Indiquez uniquement la "
+    "lettre (A, B, C ou D).\n"
+    "\nQuestion : {question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}",
+    "Vous passez un examen. Sélectionnez la bonne réponse à la question "
+    "ci-dessous. Répondez uniquement par la lettre.\n"
+    "\nQ : {question}\n(A) {A}\n(B) {B}\n(C) {C}\n(D) {D}",
+    "En tant qu'expert compétent, identifiez la bonne réponse à cette question. "
+    "Indiquez uniquement la lettre du bon choix.\n"
+    "\n{question}\nOptions :\nA) {A}\nB) {B}\nC) {C}\nD) {D}",
+    "{question}\nA. {A}\nB. {B}\nC. {C}\nD. {D}\n\nRéponse :",
+    "Lisez attentivement la question suivante et choisissez la meilleure réponse "
+    "parmi les options proposées. Indiquez uniquement la lettre.\n"
+    "\nQuestion : {question}\nChoix :\na) {A}\nb) {B}\nc) {C}\nd) {D}",
 ]
 
 TEMPLATES: dict[str, list[str]] = {"en": EN_TEMPLATES, "fr": FR_TEMPLATES}
-
-
-def subject_label(subject: str, language: str) -> str:
-    """Return the human-readable subject label used inside a prompt.
-
-    English uses the de-underscored slug; French uses the hand-authored name when
-    available, falling back to the de-underscored slug otherwise.
-    """
-    spaced = subject.replace("_", " ")
-    if language == "fr":
-        if subject not in FR_SUBJECT_NAMES:
-            logger.warning(
-                "No French name for subject %r; falling back to %r.", subject, spaced
-            )
-        return FR_SUBJECT_NAMES.get(subject, spaced)
-    return spaced
-
-
-def render_choices(row: Mapping[str, object]) -> str:
-    """Render the four answer choices as ``A. ...`` lines (constant across variants)."""
-    return "\n".join(
-        f"{letter}. {row[f'choice_{letter}']}" for letter in ANSWER_LETTERS
-    )
 
 
 def render_prompt(row: Mapping[str, object], variant_id: str, language: str) -> str:
     """Render one item under one prompt variant.
 
     Args:
-        row: An item row exposing ``subject``, ``question``, and ``choice_A``..
-            ``choice_D`` (e.g. a record from ``selected_items_{en,fr}.csv``).
-        variant_id: One of ``VARIANT_IDS`` (``V_1``..``V_5``).
-        language: ``"en"`` or ``"fr"``; selects the template set and subject label.
+        row: An item row exposing ``question`` and ``choice_A``..``choice_D``
+            (e.g. a record from ``selected_items_{en,fr}.csv``).
+        variant_id: One of ``VARIANT_IDS`` (``v_0``..``v_4``).
+        language: ``"en"`` or ``"fr"``; selects the template set.
 
     Returns:
         The fully rendered user message sent to the system under test.
@@ -112,8 +86,5 @@ def render_prompt(row: Mapping[str, object], variant_id: str, language: str) -> 
             f"Unknown variant_id {variant_id!r}; expected one of {VARIANT_IDS}."
         )
     template = TEMPLATES[language][VARIANT_IDS.index(variant_id)]
-    return template.format(
-        subject=subject_label(str(row["subject"]), language),
-        question=row["question"],
-        choices=render_choices(row),
-    )
+    choices = {letter: row[f"choice_{letter}"] for letter in ANSWER_LETTERS}
+    return template.format(question=row["question"], **choices)

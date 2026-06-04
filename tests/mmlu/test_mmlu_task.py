@@ -42,7 +42,7 @@ def _score_one(target: str, content: str) -> tuple[object, dict[str, object]]:
     Returns the score value and its metadata.
     """
     sut = Task(
-        dataset=MemoryDataset([Sample(input="q", target=target, id="item__V_1")]),
+        dataset=MemoryDataset([Sample(input="q", target=target, id="item__v_0")]),
         solver=generate(),
         scorer=letter_choice(),
     )
@@ -114,22 +114,22 @@ class TestDatasetShape:
 
 
 class TestLanguage:
-    def test_french_prompt_uses_french_cue(self) -> None:
+    def test_french_prompt_uses_french_wording(self) -> None:
         # given the French language
-        # when a sample prompt is rendered
+        # when a sample prompt is rendered (the canonical v_0 variant)
         sut = get_mmlu_tee_dataset(language="fr", n_items=4, n_variants=1)
         sample = next(iter(sut))
-        # then it carries the French answer cue and language tag
-        assert "Réponse" in str(sample.input)
+        # then it carries French instruction wording and the language tag
+        assert "Répondez à la question à choix multiples" in str(sample.input)
         assert sample.metadata is not None
         assert sample.metadata["language"] == "fr"
 
-    def test_english_prompt_uses_english_cue(self) -> None:
-        # given the English language / when a prompt is rendered
+    def test_english_prompt_uses_english_wording(self) -> None:
+        # given the English language / when a prompt is rendered (canonical v_0)
         sut = get_mmlu_tee_dataset(language="en", n_items=4, n_variants=1)
         sample = next(iter(sut))
-        # then it ends on the English answer cue
-        assert str(sample.input).rstrip().endswith("Answer:")
+        # then it carries English instruction wording
+        assert "Answer the following multiple-choice question" in str(sample.input)
 
 
 class TestValidation:

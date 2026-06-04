@@ -23,8 +23,8 @@ A TEE eval is an Inspect task that:
 
 - reads a **fixed, frozen item set** (the same items are reused across every
   generation cell, so the contrast isn't confounded by item sampling);
-- expands each item into one sample per **prompt variant** (`V_1`..`V_n`; `V_1`
-  is the canonical benchmark prompt), giving N items × V variants samples;
+- expands each item into one sample per **prompt variant** (`v_0`..`v_{n-1}`;
+  `v_0` is the canonical reference variant), giving N items × V variants samples;
 - runs each sample for **R replications via Inspect epochs**, at **temperature
   > 0** (replicate noise only exists above 0);
 - carries `item_id`, `variant_id`, `language`, and any strata (e.g.

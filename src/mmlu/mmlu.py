@@ -1,6 +1,6 @@
 """MMLU/MMMLU correctness eval with prompt variants, for the TEE study.
 
-Each selected MMLU item is rendered under several hand-authored prompt variants
+Each selected MMLU item is rendered under the author's original prompt variants
 (``mmlu.data_gen.prompt_variants``) and run for several replications (Inspect
 epochs), producing the (item x variant x replication) observations the
 ``totalevalerror`` R pipeline decomposes into variance components.
@@ -79,7 +79,7 @@ def mmlu_tee(
             categories/subjects, deterministic given ``seed``). ``None`` uses all
             items in the CSV. This is item-level subsetting, distinct from
             ``--limit`` which truncates the total (item x variant) sample count.
-        n_variants: Number of prompt variants to use, 1 to 5 (``V_1``..``V_n``).
+        n_variants: Number of prompt variants to use, 1 to 5 (``v_0``..``v_{n-1}``).
         seed: Seed for the stratified item subset (not the generation seed).
 
     Returns:

@@ -48,6 +48,10 @@ TEE_COLUMNS = [
     "subject",
 ]
 
+# Extra per-row columns kept for parse-failure reporting only. They are appended
+# to the in-memory frame but excluded when writing the CSV (which uses TEE_COLUMNS).
+REPORT_COLUMNS = ["explanation", "stop_reason"]
+
 DEFAULT_LOGS = "logs"
 DEFAULT_OUT = "exports/tee_long.csv"
 RDA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "long_csv_to_rda.R"
@@ -83,11 +87,30 @@ def resolve_temperature(log: EvalLog) -> float | None:
     return None
 
 
+def resolve_stop_reason(sample: Any) -> str | None:
+    """Return the generation stop reason for a sample, if recorded.
+
+    A ``max_tokens`` stop means the model was truncated mid-output; a natural
+    ``stop`` paired with a parse failure is a genuine non-answer.
+    """
+    output = getattr(sample, "output", None)
+    stop_reason = getattr(output, "stop_reason", None)
+    if stop_reason is None:
+        choices = getattr(output, "choices", None) or []
+        if choices:
+            stop_reason = getattr(choices[0], "stop_reason", None)
+    return str(stop_reason) if stop_reason is not None else None
+
+
 def log_to_rows(log: EvalLog) -> list[dict[str, Any]]:
     """Convert one ``EvalLog`` to long-format rows (one per sample observation).
 
     Samples missing the TEE metadata keys, or with no score, are skipped with a
     warning. Uses the first scorer's value (TEE evals score with a single scorer).
+
+    Each row also carries the model ``explanation`` (completion) and
+    ``stop_reason`` for parse-failure reporting; these are not part of
+    ``TEE_COLUMNS`` and so are excluded from the exported CSV.
     """
     model = log.eval.model
     temperature = resolve_temperature(log)
@@ -113,6 +136,8 @@ def log_to_rows(log: EvalLog) -> list[dict[str, Any]]:
                 "outcome": score_to_outcome(score.value),
                 "language": metadata.get("language"),
                 "subject": metadata.get("subject"),
+                "explanation": score.explanation,
+                "stop_reason": resolve_stop_reason(sample),
             }
         )
     return rows
@@ -147,7 +172,7 @@ def export_logs(log_entries: list[str], out_csv: str | Path) -> pd.DataFrame:
     for path in paths:
         rows.extend(log_to_rows(read_eval_log(path)))
 
-    frame = pd.DataFrame(rows, columns=TEE_COLUMNS)
+    frame = pd.DataFrame(rows, columns=TEE_COLUMNS + REPORT_COLUMNS)
     frame["outcome"] = pd.to_numeric(frame["outcome"], errors="coerce")
     frame["replication"] = pd.to_numeric(frame["replication"], errors="coerce").astype(
         "Int64"
@@ -155,7 +180,7 @@ def export_logs(log_entries: list[str], out_csv: str | Path) -> pd.DataFrame:
 
     out_path = Path(out_csv)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    frame.to_csv(out_path, index=False)
+    frame[TEE_COLUMNS].to_csv(out_path, index=False)
     return frame
 
 
@@ -173,6 +198,42 @@ def parse_failure_report(frame: pd.DataFrame) -> pd.DataFrame:
     )
     report["parse_rate"] = 1.0 - report["parse_failures"] / report["n"]
     return report
+
+
+_DETAIL_COLUMNS = ["item_id", "variant_id", "replication", "stop_reason", "completion"]
+_COMPLETION_PREVIEW_CHARS = 100
+
+
+def _one_line_preview(text: Any) -> str:
+    """Collapse a completion to a single truncated line for the detail listing."""
+    if text is None:
+        return ""
+    collapsed = " ".join(str(text).split())
+    if len(collapsed) > _COMPLETION_PREVIEW_CHARS:
+        return collapsed[: _COMPLETION_PREVIEW_CHARS - 1] + "…"
+    return collapsed
+
+
+def parse_failure_summary(frame: pd.DataFrame) -> pd.Series:
+    """Count parse failures (NA outcome) by ``stop_reason``.
+
+    ``max_tokens`` means the model was truncated before producing a parseable
+    answer; a natural ``stop`` is a genuine non-answer.
+    """
+    failures = frame[frame["outcome"].isna()]
+    return failures["stop_reason"].value_counts(dropna=False)
+
+
+def parse_failure_details(frame: pd.DataFrame) -> pd.DataFrame:
+    """One row per parse failure: identity, ``stop_reason``, and the completion.
+
+    The completion (the scorer's ``explanation``) is the model output that could
+    not be parsed into an answer letter — the "error message" for the failure.
+    Each is collapsed to a single truncated line for readability.
+    """
+    failures = frame[frame["outcome"].isna()].copy()
+    failures["completion"] = failures["explanation"].map(_one_line_preview)
+    return failures[_DETAIL_COLUMNS].reset_index(drop=True)
 
 
 def write_rda(csv_path: str | Path, rda_path: str | Path, name: str) -> None:
@@ -219,6 +280,14 @@ def main(argv: list[str] | None = None) -> None:
     frame = export_logs(args.logs, args.out)
     logger.info("Wrote %d rows to %s", len(frame), args.out)
     logger.info("\nParse-failure report (per cell):\n%s", parse_failure_report(frame))
+    logger.info(
+        "\nParse failures by stop_reason:\n%s", parse_failure_summary(frame).to_string()
+    )
+    details = parse_failure_details(frame)
+    with pd.option_context(
+        "display.max_rows", None, "display.max_colwidth", None, "display.width", None
+    ):
+        logger.info("\nParse-failure detail (%d):\n%s", len(details), details.to_string())
 
     if args.rda:
         rda_path = Path(args.out).with_suffix(".rda")

@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from inspect_ai import Task, eval
 from inspect_ai.dataset import MemoryDataset, Sample
@@ -17,7 +18,9 @@ from utils.tee_export import (
     TEE_COLUMNS,
     export_logs,
     log_to_rows,
+    parse_failure_details,
     parse_failure_report,
+    parse_failure_summary,
     resolve_temperature,
     score_to_outcome,
     write_rda,
@@ -140,10 +143,22 @@ class TestExportLogs:
         # when exported to CSV
         out_csv = tmp_path / "exports" / "tee_long.csv"
         frame = export_logs([str(logs_dir)], out_csv)
-        # then both logs' rows are combined under the expected schema
+        # then both logs' rows are combined, and the CSV holds only TEE_COLUMNS
         assert out_csv.exists()
-        assert list(frame.columns) == TEE_COLUMNS
+        assert list(pd.read_csv(out_csv).columns) == TEE_COLUMNS
         assert len(frame) == 2
+
+    def test_csv_excludes_report_columns(self, tmp_path: Path) -> None:
+        # given a run that produces a completion
+        logs_dir = tmp_path / "logs"
+        _synthetic_log("B", "B", epochs=1, log_dir=logs_dir)
+        out_csv = tmp_path / "out.csv"
+        # when exported
+        frame = export_logs([str(logs_dir)], out_csv)
+        # then the frame carries reporting columns but the CSV does not
+        assert {"explanation", "stop_reason"}.issubset(frame.columns)
+        assert "explanation" not in pd.read_csv(out_csv).columns
+        assert "stop_reason" not in pd.read_csv(out_csv).columns
 
     def test_parse_failure_report_counts_na_outcomes(self, tmp_path: Path) -> None:
         # given one correct and one unparseable observation
@@ -155,6 +170,44 @@ class TestExportLogs:
         report = parse_failure_report(frame)
         assert int(report["n"].sum()) == 2
         assert int(report["parse_failures"].sum()) == 1
+
+
+class TestParseFailureDiagnostics:
+    def test_details_list_failing_completion(self, tmp_path: Path) -> None:
+        # given one parseable and one unparseable observation
+        logs_dir = tmp_path / "logs"
+        _synthetic_log("B", "B", epochs=1, log_dir=logs_dir)
+        _synthetic_log("B", "no idea here", epochs=1, log_dir=logs_dir)
+        frame = export_logs([str(logs_dir)], tmp_path / "out.csv")
+        # when the detail listing is built
+        details = parse_failure_details(frame)
+        # then only the failure is listed, with its completion as the error message
+        assert len(details) == 1
+        assert details.iloc[0]["item_id"] == "math_0001"
+        assert details.iloc[0]["completion"] == "no idea here"
+
+    def test_details_collapse_and_truncate_completion(self, tmp_path: Path) -> None:
+        # given an unparseable multi-line completion longer than the preview budget
+        logs_dir = tmp_path / "logs"
+        long_text = "To solve this\nwe must\n" + "x " * 200
+        _synthetic_log("B", long_text, epochs=1, log_dir=logs_dir)
+        frame = export_logs([str(logs_dir)], tmp_path / "out.csv")
+        # when the detail listing is built
+        completion = parse_failure_details(frame).iloc[0]["completion"]
+        # then it is a single truncated line
+        assert "\n" not in completion
+        assert completion.startswith("To solve this we must")
+        assert completion.endswith("…")
+        assert len(completion) == 100
+
+    def test_summary_counts_failures_by_stop_reason(self, tmp_path: Path) -> None:
+        # given two unparseable observations from a mockllm run (natural stop)
+        logs_dir = tmp_path / "logs"
+        _synthetic_log("B", "no idea", epochs=2, log_dir=logs_dir)
+        frame = export_logs([str(logs_dir)], tmp_path / "out.csv")
+        # when summarised by stop_reason / then both failures are counted
+        summary = parse_failure_summary(frame)
+        assert int(summary.sum()) == 2
 
 
 @pytest.mark.skipif(shutil.which("Rscript") is None, reason="Rscript not installed")

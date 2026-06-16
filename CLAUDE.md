@@ -36,6 +36,31 @@ The `.eval` log then exports to long format
 (`item_id, variant_id, epoch, model, language, correct`) for the R-side
 `tee_design → tee_decompose → tee_se_compare → tee_dstudy` pipeline.
 
+#### Exporting results (.eval → long-format CSV/.rda)
+
+`src/utils/tee_export.py` reads one or more `.eval` logs and emits the
+long-format table `tee_design()` expects (one row per item × variant ×
+replication). It is generic across TEE evals: it reads the standard
+sample-metadata keys (`item_id`, `variant_id`, `category`, `language`,
+`subject`), the model and temperature from the log, and the replication index
+from the Inspect epoch. Scores map to a binary `outcome`; parse failures
+(`NOANSWER`) become `NA` so `tee_design()` drops them, and the run prints a
+per-cell parse-failure report.
+
+```sh
+uv run python -m utils.tee_export --logs logs/ --out exports/tee_long.csv --rda
+```
+
+- `--logs` — log directories, globs, or files to read (default: `logs/`); accepts
+  multiple entries.
+- `--out` — output CSV path (default: `exports/tee_long.csv`).
+- `--rda` — also write a `.rda` alongside the CSV by shelling out to
+  `scripts/long_csv_to_rda.R` (requires `Rscript` on PATH).
+- `--name` — R object name inside the `.rda` (default: the `--out` file stem).
+
+`scripts/long_csv_to_rda.R` is base-R only and can also be run standalone:
+`Rscript scripts/long_csv_to_rda.R <csv> <rda_out> [name]`.
+
 ### Methodological commitments (from the paper)
 
 - **Prompt variants vary instruction/framing only** — task, output format, and

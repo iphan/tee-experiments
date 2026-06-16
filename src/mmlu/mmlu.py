@@ -50,9 +50,16 @@ DEFAULT_MAX_TOKENS = 16  # bare-letter budget; --max-tokens
 DATA_PACKAGE = "mmlu.data_gen.data"
 EVAL_VERSION = load_version_from_yaml("mmlu")
 
-# Prefer a letter that follows the answer cue ("Answer:" / "Réponse :"); the cue
-# allows an optional colon and surrounding parentheses, e.g. "Answer: (B)".
-_CUE_RE = re.compile(r"(?i)(?:answer|r[ée]ponse)\s*:?\s*\(?\s*([A-D])")
+# Prefer a letter that follows the answer cue ("Answer:" / "Réponse :" /
+# "answer is"); allows an optional colon, an "is" gap, markdown bold, and
+# surrounding parentheses, e.g. "Answer: (B)", "The correct answer is **a)**".
+_CUE_RE = re.compile(
+    r"(?i)(?:answer|r[ée]ponse)\b[\s:]*(?:is\b\s*)?\*{0,2}\(?\s*([A-Da-d])\b"
+)
+# An MCQ choice label: optional markdown/paren, a letter, then ")", e.g.
+# "**a)**", "(b)", "c)". Roman numerals ("**I.**") and prose ("An undirected…")
+# do not match: they lack a letter immediately followed by ")".
+_CHOICE_LABEL_RE = re.compile(r"\*{0,2}\(?\s*([A-Da-d])\)")
 # A leading, optionally parenthesised letter, e.g. "A", "a.", "(C)".
 _LEADING_RE = re.compile(r"^\(?\s*([A-Da-d])\b")
 # Last resort: the first standalone capital letter A-D anywhere (capital only, so
@@ -181,7 +188,7 @@ def letter_choice() -> Scorer:
 def _extract_letter(text: str) -> str | None:
     """Extract an answer letter (A-D) from a model completion, or ``None``."""
     stripped = text.strip()
-    for pattern in (_CUE_RE, _LEADING_RE, _STANDALONE_RE):
+    for pattern in (_CUE_RE, _CHOICE_LABEL_RE, _LEADING_RE, _STANDALONE_RE):
         match = pattern.search(stripped)
         if match:
             return match.group(1).upper()

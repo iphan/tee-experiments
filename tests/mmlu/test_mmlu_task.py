@@ -175,7 +175,10 @@ class TestExtractLetter:
             ("(C)", "C"),
             ("B.", "B"),
             ("Answer: D", "D"),
+            ("answer: a", "A"),
+            ("Answer c)", "C"),
             ("Réponse : C", "C"),
+            ("reponse: b", "B"),
             ("The answer is C.", "C"),
         ],
     )
@@ -183,7 +186,35 @@ class TestExtractLetter:
         # given a model output / when a letter is extracted / then it is correct
         assert _extract_letter(text) == expected
 
-    @pytest.mark.parametrize("text", ["", "I am not sure", "let me think"])
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            # Real gemini-2.5-flash completions truncated at max_tokens=16: a
+            # markdown-bolded choice label after a verbose "answer is" lead-in.
+            ("The correct answer is **a)**.", "A"),
+            ("The best answer is **d) I and II**.", "D"),
+            ("The correct answer is **b) output to begin to rise.**", "B"),
+            ("The best answer is **c) changes in government spending", "C"),
+            ("Answer: a", "A"),
+        ],
+    )
+    def test_recovers_markdown_choice_label(self, text: str, expected: str) -> None:
+        # given a verbose, markdown-wrapped answer / when extracted / then the letter
+        assert _extract_letter(text) == expected
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "",
+            "I am not sure",
+            "let me think",
+            # Truncated chain-of-thought with no A-D letter emitted yet — must not
+            # be rescued by a false positive (roman numerals, articles, math).
+            "Let's analyze each statement:\n\n*   **I. An advantage of",
+            "An undirected graph has an Euler circuit if and only if it i",
+            "Let's find the ones digit of the product $1 \\cdot 2",
+        ],
+    )
     def test_unparseable_returns_none(self, text: str) -> None:
         # given output with no answer letter / when extracted / then None
         assert _extract_letter(text) is None

@@ -158,6 +158,7 @@ mmlu = "mmlu"
 
 [dependency-groups]
 dev = [
+    "anthropic>=0.105.0",
     "inspect-scout>=0.3.0",  # llm_scanner API used by agent_artefacts/trajectory_analysis/inspect_scout/
     "mypy",
     "openai>=1.99.7",

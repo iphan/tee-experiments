@@ -156,6 +156,9 @@ dependencies = [
 [project.entry-points.inspect_ai]
 mmlu = "mmlu"
 
+[project.optional-dependencies]
+test = []
+
 [dependency-groups]
 dev = [
     "anthropic>=0.105.0",
@@ -173,6 +176,9 @@ dev = [
     "toml",
     "types-PyYAML",
 ]
+
+test_py311_or_lower = []
+test_py312_or_higher = []
 
 [tool.check-wheel-contents]
 ignore = ["W005", "W009"]

@@ -994,6 +994,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pyyaml", specifier = ">=5.1.0" },
 ]
+provides-extras = ["test"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1012,6 +1013,8 @@ dev = [
     { name = "toml" },
     { name = "types-pyyaml" },
 ]
+test-py311-or-lower = []
+test-py312-or-higher = []
 
 [[package]]
 name = "inspect-scout"

@@ -287,7 +287,9 @@ def main(argv: list[str] | None = None) -> None:
     with pd.option_context(
         "display.max_rows", None, "display.max_colwidth", None, "display.width", None
     ):
-        logger.info("\nParse-failure detail (%d):\n%s", len(details), details.to_string())
+        logger.info(
+            "\nParse-failure detail (%d):\n%s", len(details), details.to_string()
+        )
 
     if args.rda:
         rda_path = Path(args.out).with_suffix(".rda")
